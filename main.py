@@ -50,7 +50,6 @@ class CountdownClock:
             self.LCDdisplay.fill(self.LCDdisplay.BLACK)
             # Flag
             country = l.get("country")
-            country = "US"
             flag_shown = country is not None
             if flag_shown:
                 try:
