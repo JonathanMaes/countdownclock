@@ -35,7 +35,12 @@ class SegmentDisplay:
     def blink(self, b):
         self._blink = min(3, max(0, int(b))) # Must be value in range 0 to 3
         self.configure()
-        
+
+    def flash(self, dt=0.5):
+        def switch(): self.brightness = 16 - self.brightness
+        switch()
+        schedule(dt, switch)
+    
     def send_data(self, data: list):
         self.i2c.writeto(self.address, bytes(data))
     
@@ -64,3 +69,7 @@ class SegmentDisplay:
 
         data = (data + [0]*16)[:16] # 16 (idk why it's not 8)
         self.send_data([(0x00 + offset) % 0x10] + data)  # 0x00 is the starting register address
+
+def schedule(t, f): # Run function <f> (without arguments) after <t> seconds
+    timer = Timer()
+    timer.init(mode=Timer.ONE_SHOT, period=int(t*1000), callback=lambda timer: f())
