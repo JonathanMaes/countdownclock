@@ -1,4 +1,5 @@
 import errno
+import gc
 import json
 import requests
 import time
@@ -78,6 +79,7 @@ class LL2Sync:
         return (self.dt >= 0, H, M, S)
 
     def tick(self): # Performs all the checks and requests information when needed. Should be run every few seconds or so.
+        gc.collect()
         # HOW ABOUT THIS:
         #   -> Must make sure that we do not empty this queue too rapidly, otherwise threshold requests might fail.
         #        -> Idea: we could keep track of <i>, the number of requests performed, and when it exceeds
