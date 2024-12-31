@@ -18,11 +18,12 @@ def connect(): # Expects wlan.json to contain {"ssid": ..., "password": ...}
     while wlan.isconnected() == False:
         for _ in range(10): # Blink onboard LED while not connected to WLAN
             pico_led.toggle()
-            time.sleep(0.1)
+            time.sleep(0.2)
     ip = wlan.ifconfig()[0]
     print(f'Connected on {ip}')
     pico_led.on()
     setUTCtime()
+    pico_led.off()
     return ip
 
 def setUTCtime():
