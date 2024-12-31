@@ -1,5 +1,4 @@
 from machine import Pin, Timer, SoftI2C
-import time
 
 
 class SegmentDisplay:

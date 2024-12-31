@@ -1,11 +1,9 @@
-import asyncio
 import errno
 import json
 import network
 import ntptime
 import requests
 import time
-
 from machine import Pin
 
 def connect(): # Expects wlan.json to contain {"ssid": ..., "password": ...}
