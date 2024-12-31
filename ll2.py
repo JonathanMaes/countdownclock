@@ -143,7 +143,9 @@ class LL2Sync:
         attribute("pad", "pad", "name")
         attribute("pad_location", "pad", "location", "name")
         attribute("lsp", "launch_service_provider", "name")
-        attribute("country", "pad", "country", 0, "alpha_2_code")
+        # Country codes are found in many places. Set country in increasing order of importance.
+        attribute("country", "pad", "agencies", 0, "country", 0, "alpha_2_code")
+        attribute("country", "pad", "country", "alpha_2_code")
         attribute("country", "mission", "agencies", 0, "country", 0, "alpha_2_code")
         attribute("country", "launch_service_provider", "country", 0, "alpha_2_code")
         attribute("country", "rocket", "configuration", "manufacturer", "country", 0, "alpha_2_code")
