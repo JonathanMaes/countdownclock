@@ -18,7 +18,7 @@ class LL2Sync:
         self.thresholds = Threshold([180, 60, -60, -180]) # Seconds until launch (<0 is T+) when we will re-fetch data (to detect HOLD HOLD HOLD)
         self._t_min = 0 # Earliest time when we want to know a launch (used in get_upcoming)
 
-        self.cachefile = "llcache_new.json"
+        self.cachefile = "llcache.json"
         self.cache_load()
         
         self.timer_tick = Timer()
@@ -54,9 +54,10 @@ class LL2Sync:
             for launch in self.launches:
                 if not launch.get("detailed", False): # Launch was not yet fetched in detailed mode
                     self.queue_details(launch["id"])
-        except OSError: # File not found
+        except (OSError, KeyError): # File not found or invalid
             self.launches = []
             self.lastrequesttime = 0
+            self.cache_save()
 
     @property
     def NETepoch(self):
