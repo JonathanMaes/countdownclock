@@ -1,9 +1,10 @@
 import requests
+import sys
 import time
 from machine import Timer
 
 from lcd import LCD_1inch8
-from ll2 import LL2Sync
+from ll2 import LL2Sync, unix_to_iso8601
 from segmentdisplay import SegmentDisplay
 
 
@@ -122,3 +123,7 @@ if __name__ == "__main__":
         display = CountdownClock(brightness=1)
     except KeyboardInterrupt:
         exit()
+    except Exception as e:
+        with open("err.log", "w") as logfile:
+            logfile.write(f"{unix_to_iso8601(time.time())}\n")
+            sys.print_exception(e, file=logfile)
