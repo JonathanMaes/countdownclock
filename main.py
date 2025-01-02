@@ -88,7 +88,6 @@ class CountdownClock:
             status_id = status.get("id")
             status_text = status.get("name", "Status Unknown")
             if len(status_text) > 20: status_text = status.get("abbrev")
-            status_id = 2
             colors = {
                 1: self.LCDdisplay.GREEN, # Go for launch
                 5: self.LCDdisplay.color(0, 0, 128), # Hold
