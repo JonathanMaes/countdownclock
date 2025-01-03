@@ -94,11 +94,13 @@ class CountdownClock:
                 6: self.LCDdisplay.WHITE, # In flight
                 9: self.LCDdisplay.GREEN, # Payload deployed
                 3: self.LCDdisplay.GREEN, # Launch successful
-                4: self.LCDdisplay.RED, # Launch failure
-                7: self.LCDdisplay.color(255, 80, 0), # Launch partial failure
+                4: self.LCDdisplay.color(160, 0, 0), # Launch failure
+                7: self.LCDdisplay.RED, # Launch partial failure
             } # 2: TBD, 8: TBC
             col = colors.get(status_id, self.LCDdisplay.BLACK)
-            anticol = col ^ 0xFFFF # Inverse color
+            R, G, B = self.LCDdisplay.RGB(col)
+            brightness = 1e-4*(456*R*R + 896*G*G + 174*B*B)**.5 # From https://stackoverflow.com/a/24213274
+            anticol = self.LCDdisplay.WHITE if brightness < 0.5 else self.LCDdisplay.BLACK
             status_height = 16
             self.LCDdisplay.fill_rect(0, self.LCDdisplay.height - status_height, self.LCDdisplay.width, status_height, colors.get(status_id, self.LCDdisplay.BLACK))
             self.LCDdisplay.hline(0, self.LCDdisplay.height - status_height - 1, self.LCDdisplay.width, self.LCDdisplay.WHITE)
