@@ -3,8 +3,9 @@ import gc
 import json
 import requests
 import time
-
 from machine import Timer
+
+import medea
 from web import connect
 
 
@@ -97,16 +98,15 @@ class LL2Sync:
                 self.queue.pop(0)
         # Remove past launches when they are more than <keep_seconds> ago
         self.launches = list(filter(lambda launch: launch["net_epoch"] > self.t_min, self.launches))
-    
-    def request(self, endpoint):
-        # TODO: what to return when atypical request? Have to create failsafes and set self.NETepoch to -1 somehow.
+
+    def request(self, endpoint) -> medea.LazyRequest | None:
         url = "https://ll.thespacedevs.com/2.3.0/" + endpoint.lstrip("/")
         if self.lastrequesttime > time.time(): return
         self.lastrequesttime = time.time()
         try:
-            response = requests.get(url)
+            response = medea.LazyRequest(url, timeout=10.)
             if response.status_code == 429: # Too many requests
-                    response_throttle = requests.get("https://ll.thespacedevs.com/2.3.0/api-throttle/")
+                    response_throttle = requests.get("https://ll.thespacedevs.com/2.3.0/api-throttle/") # Just use requests lib, this is a small JSON
                     self.lastrequesttime = time.time() + response_throttle.json()["next_use_secs"]
                     return
             elif response.status_code == 200: return response
@@ -118,57 +118,102 @@ class LL2Sync:
             else:
                 raise e
     
-    def update_launch_data(self, launch: dict): # Puts relevant information from an LL2 launch response into self.launches.
-        if (ID := launch.get("id", None)) is None: return
+    def update_launch_data(self, lazyreq: medea.LazyRequest, detailed: bool = False): # Puts relevant information from an LL2 launch response into self.launches.
+        """ When <detailed> is True, the ["detailed"] field of affected launches is set to True, preventing further detailed requests. """
+        new = [{}] # List of launches in the response. We will build this up during the JSONgen, and merge with self.launches later.
         
-        # Have we requested this ID yet?
-        ls = [l for l in self.launches if l["id"] == ID]
-        if ls: # Known launch
-            l = ls[0]
-        else: # New launch: add and fetch details
-            l = {"id": ID, "detailed": False}
-            self.launches.append(l)
-            self.queue_details(ID)
+        JSONgen = lazyreq.tokenize()
+        path = []
+        for tok, val in JSONgen:
+            if medea.extendpath(path, tok, val): continue # Not at a key-value pair
 
-        # Save relevant fields (NET, rocket, payload, pad, organization, country...)
-        def attribute(name, *path, default=None): # Default value will only be set if attribute not set yet
-            l[name] = get_safe(launch, *path, default=l.get(name, default))
-        attribute("net", "net")
-        l["net_epoch"] = iso8601_to_unix(l["net"])
-        attribute("net_precision_id", "net_precision", "id") # >2: Uncertainty >1h, so probably not interesting to show on clock
-        attribute("status", "status") # Dict with "id", "name", "abbrev" and "description"
-        attribute("image_thumbnail_url", "image", "thumbnail_url")
-        r, p = get_safe(launch, "name", default=" | ").split(" | ") # Failsafe when not using detailed mode
-        attribute("rocket_name", "rocket", "configuration", "full_name", default=r)
-        attribute("payload_name", "mission", "name", default=p)
-        attribute("pad", "pad", "name")
-        attribute("pad_location", "pad", "location", "name")
-        attribute("lsp", "launch_service_provider", "name")
-        # Country codes are found in many places. Set country in increasing order of importance.
-        attribute("country", "pad", "agencies", 0, "country", 0, "alpha_2_code")
-        attribute("country", "pad", "country", "alpha_2_code")
-        attribute("country", "mission", "agencies", 0, "country", 0, "alpha_2_code")
-        attribute("country", "launch_service_provider", "country", 0, "alpha_2_code")
-        attribute("country", "rocket", "configuration", "manufacturer", "country", 0, "alpha_2_code")
+            if path[0] == "results":
+                i = int(path[1]) # Number of launch we are at in the response (for indexing <new>)
+                d = 2 # Offset for indexing (because we have to skip ["results"][i])
+                if len(new) <= i: new.append({})
+            else:
+                i = d = 0
+            
+            def check_field(*keypath):
+                return path[d:] == list(keypath)
+            
+            l = new[i]
+            if check_field("id"):
+                l["id"] = val
+            elif check_field("net"):
+                l["net"] = val
+                l["net_epoch"] = iso8601_to_unix(l["net"])
+            elif check_field("net_precision", "id"):
+                l["net_precision_id"] = val # >2: Uncertainty >1h, so probably not interesting to show on clock
+            elif path[d] == "status": # Dict with "id", "name", "abbrev" and "description"
+                l.setdefault("status", {}) # Setting a dict requires some extra effort
+                l["status"][path[d+1]] = val
+            elif check_field("image", "thumbnail_url"):
+                l["image_thumbnail_url"] = val
+            elif check_field("name"):
+                split = val.split(" | ") # Failsafe when not using detailed mode
+                if len(split) != 2: continue
+                l.setdefault("rocket_name", split[0])
+                l.setdefault("payload_name", split[1])
+            elif check_field("rocket", "configuration", "full_name"):
+                l["rocket_name"] = val
+            elif check_field("mission", "name"):
+                l["payload_name"] = val
+            elif check_field("pad", "name"):
+                l["pad"] = val
+            elif check_field("pad", "location", "name"):
+                l["pad_location"] = val
+            elif check_field("launch_service_provider", "name"):
+                l["lsp"] = val
+            elif "country" in path: # Country codes are found in many places. Set country in increasing order of importance.
+                priorities = [ # First has highest priority
+                    ("rocket", "configuration", "manufacturer", "country", 0, "alpha_2_code"),
+                    ("launch_service_provider", "country", 0, "alpha_2_code"),
+                    ("mission", "agencies", 0, "country", 0, "alpha_2_code"),
+                    ("pad", "country", "alpha_2_code"),
+                    ("pad", "agencies", 0, "country", 0, "alpha_2_code")
+                ]
+                for i, p in enumerate(priorities):
+                    if check_field(*p):
+                        if l.get("country_importance", 100) > i:
+                            l["country"] = val
+                            l["country_importance"] = i
+                            break
+
+        # Update <self.launches> with <new>
+        for launch in new:
+            if (ID := launch.get("id")) is None: continue
+            launch.pop("country_importance", None)
+            
+            # Have we requested this ID yet?
+            ls = [l for l in self.launches if l["id"] == ID]
+            if ls: # Known launch
+                l = ls[0]
+            else: # New launch: add and fetch details
+                l = {"id": ID, "detailed": False}
+                self.launches.append(l)
+                self.queue_details(ID)
+            
+            merge(l, launch) # <launch> will overwrite fields in <l>
+            
+            if detailed: l["detailed"] = True
         
         # Sort and save
         self.launches.sort(key=lambda launch: launch["net_epoch"]) # Keep ordered if times would have changed
         self.cache_save()
-        return l
     
     def get_upcoming(self, n=3):
         t_min = unix_to_iso8601(self.t_min)
-        response = self.request(f"/launches/upcoming/?limit={n:d}&mode=list&ordering=net&net__gt={t_min}")
+        endpoint = f"/launches/upcoming/?limit={n:d}&mode=list&ordering=net&net__gt={t_min}"
+        response = self.request(endpoint)
         if response is None: return
-        for launch in response.json().get("results", []):
-            self.update_launch_data(launch)
+        self.update_launch_data(response)
     
     def get_details(self, ID): # Fetches launch <ID> in detailed mode
-        response = self.request(f"/launches/upcoming/?id={ID}&mode=normal") # "detailed" can be too big for Pico
+        endpoint = f"/launches/upcoming/?id={ID}&mode=normal" # TODO: can now change "normal" to "detailed" because memory constraints should be gone
+        response = self.request(endpoint)
         if response is None: return
-        for launch in response.json().get("results", []):
-            l = self.update_launch_data(launch)
-            l["detailed"] = True
+        self.update_launch_data(response, detailed=True)
     
     def queue_details(self, ID):
         self.queue.append(lambda: self.get_details(ID))
@@ -217,6 +262,26 @@ def get_safe(d: dict, *args, default=None):
             return default
     return s
 
+def merge(a, b, path=None, update=True):
+    """ From https://stackoverflow.com/a/25270947 """
+    if path is None: path = []
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge(a[key], b[key], path + [str(key)])
+            elif a[key] == b[key]:
+                pass # same leaf value
+            elif isinstance(a[key], list) and isinstance(b[key], list):
+                for idx, val in enumerate(b[key]):
+                    a[key][idx] = merge(a[key][idx], b[key][idx], path + [str(key), str(idx)], update=update)
+            elif update:
+                a[key] = b[key]
+            else:
+                raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
+        else:
+            a[key] = b[key]
+    return a
+
 def unix_to_iso8601(unix):
     t = time.gmtime(unix)
     return f"{t[0]}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}Z"
@@ -228,3 +293,5 @@ def iso8601_to_unix(iso):
 
 if __name__ == "__main__":
     LL2 = LL2Sync()
+    if len(LL2.launches):
+        LL2.get_details(LL2.launches[0]["id"])
