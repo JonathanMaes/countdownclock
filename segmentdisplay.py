@@ -6,8 +6,9 @@ class SegmentDisplay:
     def __init__(self, sdapin: int = 4, sclpin: int = 5, brightness: int = 15, blink: int = 0, address: int = 0x70):
         self.i2c = SoftI2C(sda=Pin(sdapin), scl=Pin(sclpin))
         self.address = address # Address of the LED display module. Can be changed by soldering A0 and A1 at back of display.
-        self._brightness = brightness # <0: screen off. 0-15: increasing brightness (16=brightest).
-        self._blink = blink # 0: continuously on, 1-3: blink increasingly fast (1: 1s on & 1s off, 2: 0.5s, 3: 0.25s)
+        self._brightness = self._blink = 0
+        self.brightness = brightness # <0: screen off. 0-15: increasing brightness (16=brightest).
+        self.blink = blink # 0: continuously on, 1-3: blink increasingly fast (1: 1s on & 1s off, 2: 0.5s, 3: 0.25s)
         self.configure()
         self.char_map = { # Segment order: dot, center, top left, bottom left, bottom, bottom right, top right, top
             'A': 0b01110111, 'C': 0b00111001, 'D': 0b01011110, 'E': 0b01111001, 'F': 0b01110001, 'G': 0b00111101,
@@ -47,7 +48,7 @@ class SegmentDisplay:
         # System setup (oscillator on)
         self.send_data([0x21])
         # Set blink (81/89: no blink, 83: fast blink, 85: blink, 87: slow blink, other 8X-values: display off)
-        self.send_data([0x89 - 2*self.blink] if self.brightness > 0 else [0x80])
+        self.send_data([0x89 - 2*self.blink] if self.brightness >= 0 else [0x80])
         # Set brightness (E0 - EF: increasing brightness)
         self.send_data([0xE0 + self.brightness])
 
