@@ -198,16 +198,21 @@ class LL2Sync:
             
             if detailed: l["detailed"] = True
         
+        # Remove launches that are not in the upcoming
+        if not detailed: # Only do this when we are making an "upcoming" request
+            IDs = [l["id"] for l in new]
+            self.launches = list(filter(lambda launch: launch["id"] in IDs, self.launches))
+        
         # Sort and save
         self.launches.sort(key=lambda launch: launch["net_epoch"]) # Keep ordered if times would have changed
         self.cache_save()
     
-    def get_upcoming(self, n=3):
+    def get_upcoming(self, n=10):
         t_min = unix_to_iso8601(self.t_min)
         endpoint = f"/launches/upcoming/?limit={n:d}&mode=list&ordering=net&net__gt={t_min}"
         response = self.request(endpoint)
         if response is None: return
-        self.update_launch_data(response)
+        self.update_launch_data(response, detailed=False)
     
     def get_details(self, ID): # Fetches launch <ID> in detailed mode
         endpoint = f"/launches/upcoming/?id={ID}&mode=normal" # TODO: can now change "normal" to "detailed" because memory constraints should be gone
