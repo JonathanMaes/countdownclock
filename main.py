@@ -114,7 +114,8 @@ class CountdownClock:
             second = T % 60
             weekdays = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"]
             time_height = 10
-            time_text = f"{weekdays[weekday]}, {hour}:{minute:02d}{f':{second:02d}'*bool(second)} UTC"
+            time_text = f":{second:02d}"*bool(second)
+            time_text = f"{weekdays[weekday]}, {hour}:{minute:02d}{time_text} UTC"
             self.LCDdisplay.fill_rect(0, self.LCDdisplay.height - status_height - 1 - time_height, self.LCDdisplay.width, time_height, self.LCDdisplay.BLACK)
             self.LCDdisplay.text(time_text, c - len(time_text)*4, self.LCDdisplay.height - status_height - 1 - 8 - int(time_height/2 - 4), self.LCDdisplay.WHITE)
 
