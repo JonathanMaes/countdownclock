@@ -106,6 +106,18 @@ class CountdownClock:
             self.LCDdisplay.hline(0, self.LCDdisplay.height - status_height - 1, self.LCDdisplay.width, self.LCDdisplay.WHITE)
             self.LCDdisplay.text(status_text, c - len(status_text)*4, self.LCDdisplay.height - 8 - int(status_height/2 - 4), anticol)
 
+            # Launch time
+            T = l["net_epoch"]
+            weekday = (int(T / 86400) + 4) % 7
+            hour = int( T / 3600 ) % 24
+            minute = int( T / 60 ) % 60
+            second = T % 60
+            weekdays = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"]
+            time_height = 10
+            time_text = f"{weekdays[weekday]}, {hour}:{minute:02d}{f':{second:02d}'*bool(second)} UTC"
+            self.LCDdisplay.fill_rect(0, self.LCDdisplay.height - status_height - 1 - time_height, self.LCDdisplay.width, time_height, self.LCDdisplay.BLACK)
+            self.LCDdisplay.text(time_text, c - len(time_text)*4, self.LCDdisplay.height - status_height - 1 - 8 - int(time_height/2 - 4), self.LCDdisplay.WHITE)
+
             self.LCDdisplay.show()
 
 def wrap_text(text: str, line_length: int = 20): # Screen is 20 characters wide
