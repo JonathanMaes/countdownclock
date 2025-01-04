@@ -140,4 +140,4 @@ if __name__ == "__main__":
     except Exception as e:
         with open("err.log", "w") as logfile:
             logfile.write(f"{unix_to_iso8601(time.time())}\n")
-            sys.print_exception(e, file=logfile)
+            sys.print_exception(e, logfile)
