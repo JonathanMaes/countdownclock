@@ -9,7 +9,7 @@ from segmentdisplay import SegmentDisplay
 
 
 class CountdownClock:
-    def __init__(self, brightness: float = None, SegmentDisplay_kwargs: dict = None, LCD_kwargs: dict = None):
+    def __init__(self, brightness: float = None, SegmentDisplay_kwargs: dict = None, LCD_kwargs: dict = None, show_CET: bool = False):
         self.LL2 = LL2Sync()
         if SegmentDisplay_kwargs is None: SegmentDisplay_kwargs = {}
         if LCD_kwargs is None: LCD_kwargs = {}
@@ -19,6 +19,7 @@ class CountdownClock:
         self.segmentdisplay = SegmentDisplay(**SegmentDisplay_kwargs)
         self.LCDdisplay = LCD_1inch8(**LCD_kwargs)
         self.LCD_last_update = 0 # Seconds since epoch.
+        self.show_CET = show_CET
 
         self.show()
         self.timer_display = Timer()
@@ -107,7 +108,10 @@ class CountdownClock:
             self.LCDdisplay.text(status_text, c - len(status_text)*4, self.LCDdisplay.height - 8 - int(status_height/2 - 4), anticol)
 
             # Launch time
-            T = l["net_epoch"]
+            try: dst = isdst_CET(l["net_epoch"])
+            except ValueError: self.show_CET = dst = False
+            TZ = ("CEST" if dst else "CET") if self.show_CET else "UTC"
+            T = l["net_epoch"] + self.show_CET*(7200 if dst else 3600)
             weekday = (int(T / 86400) + 4) % 7
             hour = int( T / 3600 ) % 24
             minute = int( T / 60 ) % 60
@@ -115,7 +119,7 @@ class CountdownClock:
             weekdays = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"]
             time_height = 10
             time_text = f":{second:02d}"*bool(second)
-            time_text = f"{weekdays[weekday]}, {hour}:{minute:02d}{time_text} UTC"
+            time_text = f"{weekdays[weekday]}, {hour}:{minute:02d}{time_text} {TZ}"
             self.LCDdisplay.fill_rect(0, self.LCDdisplay.height - status_height - 1 - time_height, self.LCDdisplay.width, time_height, self.LCDdisplay.BLACK)
             self.LCDdisplay.text(time_text, c - len(time_text)*4, self.LCDdisplay.height - status_height - 1 - 8 - int(time_height/2 - 4), self.LCDdisplay.WHITE)
 
@@ -131,10 +135,19 @@ def wrap_text(text: str, line_length: int = 20): # Screen is 20 characters wide
             lines.append(word)
     return '\n'.join(lines)
 
+def isdst_CET(unix): # Adapted from https://github.com/micropython/micropython-lib/blob/master/python-stdlib/datetime/test_datetime.py
+    if unix is None: return False
+    year = time.gmtime(unix)[0]
+    if not 2000 <= year < 2100: raise ValueError("isdst() was only implmented for years in range [2000; 2100)")
+    day = 31 - (5 * year // 4 + 4) % 7  # last Sunday of March
+    beg = time.mktime((year, 3, day, 1, 0, 0, 0, 0))
+    day = 31 - (5 * year // 4 + 1) % 7  # last Sunday of October
+    end = time.mktime((year, 10, day, 1, 0, 0, 0, 0))
+    return beg <= unix < end
 
 if __name__ == "__main__":
     try:
-        display = CountdownClock(brightness=1)
+        display = CountdownClock(brightness=1, show_CET=True)
     except KeyboardInterrupt:
         exit()
     except Exception as e:
