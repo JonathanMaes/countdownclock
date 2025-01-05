@@ -440,15 +440,18 @@ class LazyRequest:
         # Consume bytes until double newline (end of header)
         newlineCount = 0
         while True:
-            byte1 = next(stream)
-            if byte1 == ord('\r'):
-                byte2 = next(stream)
-                if byte2 == ord('\n'):
-                    newlineCount += 1
-            else:
-                newlineCount = 0
-            if newlineCount == 2:
-                break
+            try:
+                byte1 = next(stream)
+                if byte1 == ord('\r'):
+                    byte2 = next(stream)
+                    if byte2 == ord('\n'):
+                        newlineCount += 1
+                else:
+                    newlineCount = 0
+                if newlineCount == 2:
+                    break
+            except StopIteration:
+                pass
 
         return statusCode, contentLength
 
@@ -475,7 +478,6 @@ def extendpath(path: list, tok: str, val):
 if __name__ == "__main__":
     path = []
     url="https://lldev.thespacedevs.com/2.3.0/launches/previous/?id=aa79ad61-9276-4c14-8d01-40fd348d641e&mode=list&format=json"
-#     for tok, val in tokenizeFile('llcache.json'):
     for tok, val in LazyRequest(timeout=10.0, url=url).tokenize():
         print(extendpath(path, tok, val))
         print(tok, path, val)
