@@ -130,6 +130,12 @@ class LCD_1inch8(framebuf.FrameBuffer):
         """ Converts 8-bit red, green and blue values (0-255) to 16 bit hex value in 565 format. """
         return (((G&0b00011100)<<3) +((B&0b11111000)>>3)<<8) + (R&0b11111000)+((G&0b11100000)>>5)
     
+    def RGB(self, color565):
+        R = (color565 >> 3 & 0b11111) << 3
+        G = ((color565 >> 13 & 0b111) + ((color565 & 0b111) << 3)) << 2
+        B = (color565 >> 8 & 0b11111) << 3
+        return (R, G, B)
+    
     # Callback function to update the LCD buffer
     def set_pixel(self, x, y, color):
         if 0 <= x < self.width and 0 <= y < self.height:
