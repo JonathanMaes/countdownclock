@@ -127,6 +127,9 @@ class LL2Sync:
         
         JSONgen = lazyreq.tokenize()
         path = []
+        i = d = 0
+        def check_field(*keypath): return path[d:] == list(keypath)
+
         for tok, val in JSONgen:
             if medea.extendpath(path, tok, val): continue # Not at a key-value pair
             # API either returns a pure launch, or an object like {<request_metadata>, "results": [<launch(es)>]}
@@ -134,12 +137,7 @@ class LL2Sync:
                 i = int(path[1]) # Number of launch we are at in the response (for indexing <new>)
                 d = 2 # Offset for indexing (because we have to skip ["results"][i])
                 if len(new) <= i: new.append({})
-            else:
-                i = d = 0
-            
-            def check_field(*keypath):
-                return path[d:] == list(keypath)
-            
+
             l = new[i]
             if check_field("id"):
                 l["id"] = val
