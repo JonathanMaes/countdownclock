@@ -28,3 +28,6 @@ def setUTCtime():
         ntptime.settime()
     except Exception as e:
         if e.errno != errno.ETIMEDOUT: raise e
+
+if __name__ == "__main__":
+    connect()
