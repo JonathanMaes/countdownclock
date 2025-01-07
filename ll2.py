@@ -23,7 +23,7 @@ class LL2Sync:
         self.cache_load()
         
         self.timer_tick = Timer()
-        self.timer_tick.init(period=10*1000, mode=Timer.PERIODIC, callback=lambda timer: self.tick())
+        self.timer_tick.init(period=10_000, mode=Timer.PERIODIC, callback=lambda timer: self.tick()) # Period in ms
     
     @property
     def t_min(self): # Adjusts _t_min appropriately
@@ -38,7 +38,7 @@ class LL2Sync:
     @property
     def request_dt(self):
         # Two launches within 1 hour only happened twice in 2024. Probably more frequent in the future, but still rare.
-        n = max(1, self.API_throttle - len(self.thresholds)) # So allow room for Thresholds to be triggered once per hour
+        n = max(1, (self.API_throttle - len(self.thresholds))/2) # So allow room for Thresholds to be triggered once per hour, and then some
         dt = int(3600/n) + 1
         return min(dt, 600) # Wait at most 10 minutes
     
@@ -104,7 +104,7 @@ class LL2Sync:
 
     def request(self, endpoint) -> medea.LazyRequest | None:
         url = "https://ll.thespacedevs.com/2.3.0/" + endpoint.lstrip("/")
-        if self.lastrequesttime > time.time(): return
+        if self.lastrequesttime > time.time(): return # Happens if 429 status happened recently
         self.lastrequesttime = time.time()
         try:
             response = medea.LazyRequest(url, timeout=10.)
@@ -206,6 +206,7 @@ class LL2Sync:
         
         # Sort and save
         self.launches.sort(key=lambda launch: launch["net_epoch"]) # Keep ordered if times would have changed
+        self.lastrequesttime = time.time() # Just to be safe, because update_launch_data() can take a while to run
         self.cache_save()
     
     def get_upcoming(self, n=10):
@@ -224,7 +225,6 @@ class LL2Sync:
     def queue_details(self, ID):
         self.queue.append(lambda: self.get_details(ID))
         self.queue.append(self.get_upcoming) # After fetching details, make sure to update NETs before next element in queue
-            
 
 
 class Threshold:
