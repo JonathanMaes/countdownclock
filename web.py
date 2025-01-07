@@ -8,6 +8,9 @@ from machine import Pin
 def connect(): # Expects wlan.json to contain {"ssid": ..., "password": ...}
     pico_led = Pin("LED", Pin.OUT)
     wlan = network.WLAN(network.STA_IF)
+    if wlan.isconnected():
+        print("WIFI already connected.")
+        return
     wlan.active(True)
     with open("wlan.json", "r") as w:
         cred = json.load(w)

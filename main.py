@@ -6,11 +6,11 @@ from machine import Timer
 from lcd import LCD_1inch8
 from ll2 import LL2Sync, unix_to_iso8601
 from segmentdisplay import SegmentDisplay
+from web import connect
 
 
 class CountdownClock:
     def __init__(self, brightness: float = None, SegmentDisplay_kwargs: dict = None, LCD_kwargs: dict = None, show_CET: bool = False):
-        self.LL2 = LL2Sync()
         if SegmentDisplay_kwargs is None: SegmentDisplay_kwargs = {}
         if LCD_kwargs is None: LCD_kwargs = {}
         if brightness is not None:
@@ -21,7 +21,10 @@ class CountdownClock:
         self.LCD_last_update = 0 # Seconds since epoch.
         self.show_CET = show_CET
 
-        self.show()
+        self.segmentdisplay.display_message("CONNECT..")
+        connect() # LL2 does this as well, but can't hurt to try already
+        self.segmentdisplay.display_message("LOADING..")
+        self.LL2 = LL2Sync()
         self.timer_display = Timer()
         self.timer_display.init(freq=1, mode=Timer.PERIODIC, callback=lambda timer: self.show())
 
@@ -154,3 +157,4 @@ if __name__ == "__main__":
         with open("err.log", "w") as logfile:
             logfile.write(f"{unix_to_iso8601(time.time())}\n")
             sys.print_exception(e, logfile)
+            sys.print_exception(e)

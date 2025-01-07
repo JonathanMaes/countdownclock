@@ -24,6 +24,7 @@ class LL2Sync:
         
         self.timer_tick = Timer()
         self.timer_tick.init(period=10_000, mode=Timer.PERIODIC, callback=lambda timer: self.tick()) # Period in ms
+        self.tick()
     
     @property
     def t_min(self): # Adjusts _t_min appropriately
