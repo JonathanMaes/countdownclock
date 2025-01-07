@@ -12,7 +12,7 @@ from web import connect
 class LL2Sync:
     def __init__(self, API_throttle: int = 15, keep_seconds: int = 3600, cachefile="llcache.json"):
         connect()
-        self.API_throttle = API_throttle # Request at most <API_throttle> requests per minute
+        self.API_throttle = API_throttle # Request at most <API_throttle> requests per hour
         self.keep_seconds = keep_seconds # Launch will be displayed until at most T+<keep_seconds>
 
         self.queue = []
@@ -58,7 +58,7 @@ class LL2Sync:
         except (OSError, KeyError): # File not found or invalid
             self.launches = []
             self.lastrequesttime = 0
-            self.cache_save()
+            self.cache_save() # Should create or overwrite file
 
     @property
     def NETepoch(self):
@@ -96,7 +96,7 @@ class LL2Sync:
             else:
                 self.queue[0]()
                 self.queue.pop(0)
-        # Remove past launches when they are more than <keep_seconds> ago
+        # Remove launches from before <self.t_min>
         self.launches = list(filter(lambda launch: launch["net_epoch"] > self.t_min, self.launches))
 
     def request(self, endpoint) -> medea.LazyRequest | None:
@@ -126,8 +126,8 @@ class LL2Sync:
         path = []
         for tok, val in JSONgen:
             if medea.extendpath(path, tok, val): continue # Not at a key-value pair
-
-            if path[0] == "results":
+            # API either returns a pure launch, or an object like {<request_metadata>, "results": [<launch(es)>]}
+            if path[0] == "results": # Response includes some metadata, so ignore that
                 i = int(path[1]) # Number of launch we are at in the response (for indexing <new>)
                 d = 2 # Offset for indexing (because we have to skip ["results"][i])
                 if len(new) <= i: new.append({})
