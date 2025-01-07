@@ -10,7 +10,7 @@ from web import connect
 
 
 class LL2Sync:
-    def __init__(self, API_throttle: int = 15, keep_seconds: int = 3600):
+    def __init__(self, API_throttle: int = 15, keep_seconds: int = 3600, cachefile="llcache.json"):
         connect()
         self.API_throttle = API_throttle # Request at most <API_throttle> requests per minute
         self.keep_seconds = keep_seconds # Launch will be displayed until at most T+<keep_seconds>
@@ -19,7 +19,7 @@ class LL2Sync:
         self.thresholds = Threshold([180, 60, -60, -180]) # Seconds until launch (<0 is T+) when we will re-fetch data (to detect HOLD HOLD HOLD)
         self._t_min = 0 # Earliest time when we want to know a launch (used in get_upcoming)
 
-        self.cachefile = "llcache.json"
+        self.cachefile = cachefile
         self.cache_load()
         
         self.timer_tick = Timer()
