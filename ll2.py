@@ -97,7 +97,10 @@ class LL2Sync:
                 self.queue[0]()
                 self.queue.pop(0)
         # Remove launches from before <self.t_min>
+        n = len(self.launches)
         self.launches = list(filter(lambda launch: launch["net_epoch"] > self.t_min, self.launches))
+        if len(self.launches) < n: # A launch has been removed, so update everything.
+            self.get_upcoming()
 
     def request(self, endpoint) -> medea.LazyRequest | None:
         url = "https://ll.thespacedevs.com/2.3.0/" + endpoint.lstrip("/")
