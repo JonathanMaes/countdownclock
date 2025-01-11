@@ -5,7 +5,7 @@ from machine import Timer
 from lcd import LCD_1inch8
 from ll2 import LL2Sync
 from segmentdisplay import SegmentDisplay
-from utils import isdst_CET, log_exc, wrap_text
+from utils import isdst_CET, log_exc, wrap_text, wrap_timer
 from web import connect
 
 
@@ -26,7 +26,7 @@ class CountdownClock:
         self.segmentdisplay.display_message("LOADING..")
         self.LL2 = LL2Sync()
         self.timer_display = Timer()
-        self.timer_display.init(freq=1, mode=Timer.PERIODIC, callback=lambda timer: self.show())
+        self.timer_display.init(freq=1, mode=Timer.PERIODIC, callback=lambda timer: wrap_timer(self.show))
 
     def show(self): # Runs every second
         # 7-segment display
@@ -61,6 +61,7 @@ class CountdownClock:
                     flag = requests.get(f"https://raw.githubusercontent.com/yammadev/flag-icons/bd4bcf4f4829002cd10416029e05ba89a7554af4/png/{country.upper()}.png").content
                     self.LCDdisplay.show_image_PNG(0, 0, flag)
                 except Exception:
+                    log_exc(e)
                     flag_shown = False
             # Rocket name
             row = 4
@@ -111,8 +112,11 @@ class CountdownClock:
             self.LCDdisplay.text(status_text, c - len(status_text)*4, self.LCDdisplay.height - 8 - int(status_height/2 - 4), anticol)
 
             # Launch time
-            try: dst = isdst_CET(l["net_epoch"])
-            except ValueError: self.show_CET = dst = False
+            try:
+                dst = isdst_CET(l["net_epoch"])
+            except ValueError as e:
+                log_exc(e)
+                self.show_CET = dst = False
             TZ = ("CEST" if dst else "CET") if self.show_CET else "UTC"
             T = l["net_epoch"] + self.show_CET*(7200 if dst else 3600)
             weekday = (int(T / 86400) + 4) % 7

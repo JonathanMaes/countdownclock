@@ -6,7 +6,7 @@ import time
 from machine import Timer
 
 import medea
-from utils import iso8601_to_unix, log_exc, unix_to_iso8601
+from utils import iso8601_to_unix, log_exc, unix_to_iso8601, wrap_timer
 from web import connect
 
 
@@ -24,7 +24,7 @@ class LL2Sync:
         self.cache_load()
         
         self.timer_tick = Timer()
-        self.timer_tick.init(period=10_000, mode=Timer.PERIODIC, callback=lambda timer: self.tick()) # Period in ms
+        self.timer_tick.init(period=10_000, mode=Timer.PERIODIC, callback=lambda timer: wrap_timer(self.tick)) # Period in ms
         self.tick()
     
     @property
@@ -57,7 +57,8 @@ class LL2Sync:
             for launch in self.launches:
                 if not launch.get("detailed", False): # Launch was not yet fetched in detailed mode
                     self.queue_details(launch["id"])
-        except (OSError, KeyError): # File not found or invalid
+        except (OSError, KeyError) as e: # File not found or invalid
+            log_exc(e)
             self.launches = []
             self.lastrequesttime = 0
             self.cache_save() # Should create or overwrite file
@@ -121,6 +122,7 @@ class LL2Sync:
                 connect() # WIFI connection likely lost
                 return self.request(endpoint)
             else:
+                log_exc(e)
                 raise e
     
     def update_launch_data(self, lazyreq: medea.LazyRequest, detailed: bool = False): # Puts relevant information from an LL2 launch response into self.launches.

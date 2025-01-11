@@ -6,6 +6,8 @@ import requests
 import time
 from machine import Pin
 
+from utils import log_exc
+
 
 def get_credentials(file: str = "wlan.json"):
     """ Load WiFi credentials from a JSON file.
@@ -26,7 +28,7 @@ def internet_check():
         response = requests.get("http://www.google.com")
         response.close()
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -103,7 +105,7 @@ def setUTCtime():
         ntptime.settime()
     except Exception as e:
         if e.errno != errno.ETIMEDOUT:
-            print(e)
+            log_exc(e)
 
 if __name__ == "__main__":
     try:

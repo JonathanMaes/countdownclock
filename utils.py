@@ -17,6 +17,14 @@ def log_exc(e):
         logfile.write("-"*16 + "\n")
         for line in lines: logfile.write(line)
 
+def wrap_timer(func, *args, **kwargs):
+    """ Logs any errors that occur, which otherwise get hidden by a Timer. """
+    try:
+        func(*args, **kwargs)
+    except Exception as e:
+        log_exc(e)
+        raise e
+
 ## PRINTING
 def wrap_text(text: str, line_length: int = 20): # LCD screen is 20 characters wide
     lines = ['']
@@ -48,6 +56,6 @@ def iso8601_to_unix(iso: str) -> int:
     year, month, day, hour, minute, second = int(iso[0:4]), int(iso[5:7]), int(iso[8:10]), int(iso[11:13]), int(iso[14:16]), int(iso[17:19])
     return time.mktime((year, month, day, hour, minute, second, 0, 0)) # Last two zeroes are day of week and day of year, but ignore those
 
-def schedule(t, f): # Run function <f> (without arguments) after <t> seconds
+def schedule(t, f, *args, **kwargs): # Run function <f> after <t> seconds
     timer = Timer()
-    timer.init(mode=Timer.ONE_SHOT, period=int(t*1000), callback=lambda timer: f())
+    timer.init(mode=Timer.ONE_SHOT, period=int(t*1000), callback=lambda timer: wrap_timer(f, *args, **kwargs))
