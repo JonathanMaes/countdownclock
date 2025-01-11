@@ -259,16 +259,6 @@ class Threshold:
     def __len__(self): return len(self.thresholds)
 
 
-def get_safe(d: dict, *args, default=None):
-    """ Can be used to get keys from a dictionary that are not guaranteed to exist. """
-    s = d
-    for arg in args:
-        try:
-            s = s[arg]
-        except Exception:
-            return default
-    return s
-
 def merge(a, b, path=None, update=True):
     """ From https://stackoverflow.com/a/25270947 """
     if path is None: path = []
