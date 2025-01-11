@@ -6,6 +6,7 @@ import time
 from machine import Timer
 
 import medea
+from utils import iso8601_to_unix, log_exc, unix_to_iso8601
 from web import connect
 
 
@@ -278,15 +279,6 @@ def merge(a, b, path=None, update=True):
         else:
             a[key] = b[key]
     return a
-
-def unix_to_iso8601(unix: int) -> str:
-    t = time.gmtime(unix)
-    return f"{t[0]}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}Z"
-
-def iso8601_to_unix(iso: str) -> int:
-    if iso[19] != "Z": raise ValueError("Must receive ISO8601 time in UTC")
-    year, month, day, hour, minute, second = int(iso[0:4]), int(iso[5:7]), int(iso[8:10]), int(iso[11:13]), int(iso[14:16]), int(iso[17:19])
-    return time.mktime((year, month, day, hour, minute, second, 0, 0)) # Last two zeroes are day of week and day of year, but ignore those
 
 if __name__ == "__main__":
     LL2 = LL2Sync()

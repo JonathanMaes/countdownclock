@@ -1,4 +1,6 @@
-from machine import Pin, Timer, SoftI2C
+from machine import Pin, SoftI2C
+
+from utils import schedule
 
 
 class SegmentDisplay:
@@ -69,7 +71,3 @@ class SegmentDisplay:
 
         data = (data + [0]*16)[:16] # 16 (idk why it's not 8)
         self.send_data([(0x00 + offset) % 0x10] + data)  # 0x00 is the starting register address
-
-def schedule(t, f): # Run function <f> (without arguments) after <t> seconds
-    timer = Timer()
-    timer.init(mode=Timer.ONE_SHOT, period=int(t*1000), callback=lambda timer: f())

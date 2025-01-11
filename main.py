@@ -1,11 +1,11 @@
 import requests
-import sys
 import time
 from machine import Timer
 
 from lcd import LCD_1inch8
-from ll2 import LL2Sync, unix_to_iso8601
+from ll2 import LL2Sync
 from segmentdisplay import SegmentDisplay
+from utils import isdst_CET, log_exc, wrap_text
 from web import connect
 
 
@@ -128,25 +128,6 @@ class CountdownClock:
 
             self.LCDdisplay.show()
 
-def wrap_text(text: str, line_length: int = 20): # Screen is 20 characters wide
-    lines = ['']
-    for word in text.split():
-        line = f'{lines[-1]} {word}'.strip()
-        if len(line) <= line_length:
-            lines[-1] = line
-        else:
-            lines.append(word)
-    return '\n'.join(lines)
-
-def isdst_CET(unix): # Adapted from https://github.com/micropython/micropython-lib/blob/master/python-stdlib/datetime/test_datetime.py
-    if unix is None: return False
-    year = time.gmtime(unix)[0]
-    if not 2000 <= year < 2100: raise ValueError("isdst() was only implmented for years in range [2000; 2100)")
-    day = 31 - (5 * year // 4 + 4) % 7  # last Sunday of March
-    beg = time.mktime((year, 3, day, 1, 0, 0, 0, 0))
-    day = 31 - (5 * year // 4 + 1) % 7  # last Sunday of October
-    end = time.mktime((year, 10, day, 1, 0, 0, 0, 0))
-    return beg <= unix < end
 
 if __name__ == "__main__":
     try:
@@ -154,7 +135,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         exit()
     except Exception as e:
-        with open("err.log", "w") as logfile:
-            logfile.write(f"{unix_to_iso8601(time.time())}\n")
-            sys.print_exception(e, logfile)
-            sys.print_exception(e)
+        log_exc(e)
