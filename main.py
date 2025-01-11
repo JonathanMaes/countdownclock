@@ -60,7 +60,7 @@ class CountdownClock:
                 try:
                     flag = requests.get(f"https://raw.githubusercontent.com/yammadev/flag-icons/bd4bcf4f4829002cd10416029e05ba89a7554af4/png/{country.upper()}.png").content
                     self.LCDdisplay.show_image_PNG(0, 0, flag)
-                except Exception:
+                except Exception as e:
                     log_exc(e)
                     flag_shown = False
             # Rocket name
