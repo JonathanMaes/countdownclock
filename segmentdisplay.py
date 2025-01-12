@@ -9,7 +9,8 @@ class SegmentDisplay:
         self.i2c = SoftI2C(sda=Pin(sdapin), scl=Pin(sclpin))
         self.address = address # Address of the LED display module. Can be changed by soldering A0 and A1 at back of display.
         self._brightness = self._blink = 0
-        self.brightness = brightness # <0: screen off. 0-15: increasing brightness (16=brightest).
+        self.flashing = False
+        self.brightness = brightness # <0: screen off. 0-15: increasing brightness (15=brightest).
         self.blink = blink # 0: continuously on, 1-3: blink increasingly fast (1: 1s on & 1s off, 2: 0.5s, 3: 0.25s)
         self.configure()
         self.char_map = { # Segment order: dot, center, top left, bottom left, bottom, bottom right, top right, top
@@ -24,7 +25,12 @@ class SegmentDisplay:
     
     @property
     def brightness(self):
-        return self._brightness
+        if self._brightness < 0: # <0 are special values
+            return self._brightness # -1: off, should remain off
+        if self.flashing:
+            return 15 if self._brightness < 8 else 0
+        else:
+            return self._brightness
     @brightness.setter
     def brightness(self, b):
         self._brightness = min(15, max(-1, int(b))) # Must be value <16 
@@ -39,7 +45,9 @@ class SegmentDisplay:
         self.configure()
 
     def flash(self, dt=0.5):
-        def switch(): self.brightness = 16 - self.brightness
+        def switch():
+            self.flashing = not self.flashing
+            self.configure()
         switch()
         schedule(dt, switch)
     
@@ -71,3 +79,13 @@ class SegmentDisplay:
 
         data = (data + [0]*16)[:16] # 16 (idk why it's not 8)
         self.send_data([(0x00 + offset) % 0x10] + data)  # 0x00 is the starting register address
+
+if __name__ == "__main__":
+    import time
+    display = SegmentDisplay()
+    for i in range(16):
+        display.brightness = i
+        display.display_message(f"tESt {i}")
+        time.sleep(.5)
+        display.flash()
+        time.sleep(1)
