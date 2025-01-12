@@ -406,41 +406,41 @@ class LazyRequest:
         keyLen = len(key)
         keyPos = 0
 
-        # Parse the status line first
-        statusLine = []
-        while True:
-            byte = next(stream)
-            if byte == ord('\r'):  # End of the status line
-                next(stream)  # Consume the following '\n'
-                break
-            statusLine.append(chr(byte))
-
-        # Extract status code from the status line
-        statusParts = ''.join(statusLine).split()
-        if len(statusParts) >= 2 and statusParts[0].startswith("HTTP"):
-            statusCode = int(statusParts[1])  # The status code is the second element
-
-        # Extract content-length header
-        while contentLength is None:
-            byte = next(stream)
-            while chr(byte).lower() == chr(key[keyPos]): # bytes continue to match
+        try:
+            # Parse the status line first
+            statusLine = []
+            while True:
                 byte = next(stream)
-                keyPos += 1
-                if keyPos == keyLen:
-                    char = chr(byte)
-                    numberString = ""
-                    while not char.isspace():
-                        numberString += char
-                        char = chr(next(stream))
-                    contentLength = int(numberString)
+                if byte == ord('\r'):  # End of the status line
+                    next(stream)  # Consume the following '\n'
                     break
-            else:
-                keyPos = 0
+                statusLine.append(chr(byte))
 
-        # Consume bytes until double newline (end of header)
-        newlineCount = 0
-        while True:
-            try:
+            # Extract status code from the status line
+            statusParts = ''.join(statusLine).split()
+            if len(statusParts) >= 2 and statusParts[0].startswith("HTTP"):
+                statusCode = int(statusParts[1])  # The status code is the second element
+
+            # Extract content-length header
+            while contentLength is None:
+                byte = next(stream)
+                while chr(byte).lower() == chr(key[keyPos]): # bytes continue to match
+                    byte = next(stream)
+                    keyPos += 1
+                    if keyPos == keyLen:
+                        char = chr(byte)
+                        numberString = ""
+                        while not char.isspace():
+                            numberString += char
+                            char = chr(next(stream))
+                        contentLength = int(numberString)
+                        break
+                else:
+                    keyPos = 0
+
+            # Consume bytes until double newline (end of header)
+            newlineCount = 0
+            while True:
                 byte1 = next(stream)
                 if byte1 == ord('\r'):
                     byte2 = next(stream)
@@ -450,10 +450,11 @@ class LazyRequest:
                     newlineCount = 0
                 if newlineCount == 2:
                     break
-            except StopIteration:
-                pass
+            
+        except StopIteration: # We (unexpectedly) exhausted the stream
+            pass
 
-        return statusCode, contentLength
+        return statusCode or 0, contentLength or -1
 
 def extendpath(path: list, tok: str, val):
     """ <path> is a list of where in the JSON we are currently.
