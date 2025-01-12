@@ -11,10 +11,11 @@ from web import connect
 
 
 class LL2Sync:
-    def __init__(self, API_throttle: int = 15, keep_seconds: int = 3600, cachefile="llcache.json"):
+    def __init__(self, API_throttle: int = 15, keep_seconds: int = 3600, cachefile: str = "llcache.json", dev: bool = False):
         connect()
         self.API_throttle = API_throttle # Request at most <API_throttle> requests per hour
         self.keep_seconds = keep_seconds # Launch will be displayed until at most T+<keep_seconds>
+        self.dev = dev # Whether to use lldev or ll, for testing purposes.
 
         self.queue = []
         self.thresholds = Threshold([180, 60, -60, -180]) # Seconds until launch (<0 is T+) when we will re-fetch data (to detect HOLD HOLD HOLD)
@@ -106,7 +107,8 @@ class LL2Sync:
             self.get_upcoming()
 
     def request(self, endpoint) -> medea.LazyRequest | None:
-        url = "https://ll.thespacedevs.com/2.3.0/" + endpoint.lstrip("/")
+        api = "lldev" if self.dev else "ll"
+        url = f"https://{api}.thespacedevs.com/2.3.0/" + endpoint.lstrip("/")
         if self.lastrequesttime > time.time(): return # Happens if 429 status happened recently
         self.lastrequesttime = time.time()
         try:
