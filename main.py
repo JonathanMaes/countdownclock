@@ -25,7 +25,7 @@ class CountdownClock:
         self.segmentdisplay.display_message("CONNECT..")
         connect() # LL2 does this as well, but can't hurt to try already
         self.segmentdisplay.display_message("LOADING..")
-        self.LL2 = LL2Sync()
+        self.LL2 = LL2Sync(dev=False)
         self.timer_display = Timer()
         self.timer_display.init(freq=1, mode=Timer.PERIODIC, callback=lambda timer: wrap_timer(self.show))
 
