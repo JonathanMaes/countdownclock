@@ -3,6 +3,7 @@ import time
 from machine import Timer
 
 from lcd import LCD_1inch8
+from ldr import LDR
 from ll2 import LL2Sync
 from segmentdisplay import SegmentDisplay
 from utils import isdst_CET, log_exc, wrap_text, wrap_timer
@@ -10,15 +11,15 @@ from web import connect
 
 
 class CountdownClock:
-    def __init__(self, brightness: float = None, SegmentDisplay_kwargs: dict = None, LCD_kwargs: dict = None, show_CET: bool = False):
+    def __init__(self, SegmentDisplay_kwargs: dict = None, LCD_kwargs: dict = None, LDR_kwargs: dict = None, show_CET: bool = False):
         if SegmentDisplay_kwargs is None: SegmentDisplay_kwargs = {}
         if LCD_kwargs is None: LCD_kwargs = {}
-        if brightness is not None:
-            SegmentDisplay_kwargs["brightness"] = brightness*16 - 1
-            LCD_kwargs["brightness"] = brightness
+        if LDR_kwargs is None: LDR_kwargs = {}
         self.segmentdisplay = SegmentDisplay(**SegmentDisplay_kwargs)
         self.LCDdisplay = LCD_1inch8(**LCD_kwargs)
         self.LCD_last_update = 0 # Seconds since epoch.
+        self.LDR = LDR(**LDR_kwargs)
+        self.brightness_update(delta=None)
         self.show_CET = show_CET
 
         self.segmentdisplay.display_message("CONNECT..")
@@ -27,6 +28,21 @@ class CountdownClock:
         self.LL2 = LL2Sync()
         self.timer_display = Timer()
         self.timer_display.init(freq=1, mode=Timer.PERIODIC, callback=lambda timer: wrap_timer(self.show))
+
+    def brightness_update(self, delta: float|None = 0.05):
+        """ Sets the brightness based on the LDR connected to the system.
+            If `delta` is not `None`, this changes the brightness slightly (by `0 < delta < 1`).
+            If `delta` is `None`, it just gets set instantly.
+        """
+        level = self.LDR.measure()
+        if delta is None:
+            self.brightness = 0.1 if level > 3000 else 1.1
+        else:
+            self.brightness *= (1 - delta) if level > 3000 else 1/(1 - delta)
+            self.brightness = min(1, max(0.1, self.brightness))
+        # Set LCD and segment display brightness based on self.brightness
+        self.LCDdisplay.brightness = self.brightness
+        self.segmentdisplay.brightness = self.brightness*16 - 1
 
     def show(self): # Runs every second
         # 7-segment display
@@ -131,11 +147,14 @@ class CountdownClock:
             self.LCDdisplay.text(time_text, c - len(time_text)*4, self.LCDdisplay.height - status_height - 1 - 8 - int(time_height/2 - 4), self.LCDdisplay.WHITE)
 
             self.LCDdisplay.show()
+        
+        ## Light level
+        self.brightness_update()
 
 
 if __name__ == "__main__":
     try:
-        display = CountdownClock(brightness=1, show_CET=True)
+        display = CountdownClock(show_CET=True)
     except KeyboardInterrupt:
         exit()
     except Exception as e:
