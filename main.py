@@ -57,10 +57,11 @@ class CountdownClock:
             if dt[2] == 0: # <1min
                 tstr = f"{dt[3]:6d}"
         if dt[0]: # T-
-            if dt[1] == 0 and dt[2] == 0: self.segmentdisplay.flash()
             self.segmentdisplay.display_message(("t-" + tstr)[-10:])
         else: # T+
             self.segmentdisplay.display_message(("  " + tstr)[-10:])
+        if dt[0] and dt[1] == dt[2] == 0: self.segmentdisplay.flash()
+        else: self.segmentdisplay.flash(False)
         
         # LCD display
         if self.LCD_last_update < self.LL2.lastrequesttime: # Only update LCD when LL2 was updated.

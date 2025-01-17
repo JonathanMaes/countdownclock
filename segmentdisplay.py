@@ -44,12 +44,9 @@ class SegmentDisplay:
         self._blink = min(3, max(0, int(b))) # Must be value in range 0 to 3
         self.configure()
 
-    def flash(self, dt=0.5):
-        def switch():
-            self.flashing = not self.flashing
-            self.configure()
-        switch()
-        schedule(dt, switch)
+    def flash(self, state=None):
+        self.flashing = not self.flashing if state is None else state
+        self.configure()
     
     def send_data(self, data: list):
         self.i2c.writeto(self.address, bytes(data))
@@ -88,4 +85,6 @@ if __name__ == "__main__":
         display.display_message(f"tESt {i}")
         time.sleep(.5)
         display.flash()
-        time.sleep(1)
+        time.sleep(.5)
+        display.flash()
+        time.sleep(.5)
