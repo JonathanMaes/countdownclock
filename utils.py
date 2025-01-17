@@ -5,11 +5,13 @@ import time
 
 ## EXCEPTION HANDLING
 def log_exc(e):
+    # Only keep most recent logs
     try:
         with open("err.log", "r") as logfile:
-            lines = [line for line in logfile][-100:]
+            lines = [line for i, line in enumerate(logfile) if i < 300]
     except FileNotFoundError:
         lines = []
+    # Add this error to the log
     with open("err.log", "w") as logfile:
         logfile.write(f"{unix_to_iso8601(time.time())}\n")
         sys.print_exception(e, logfile)
