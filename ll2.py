@@ -217,7 +217,7 @@ class LL2Sync:
     
     def get_upcoming(self, n=10):
         t_min = unix_to_iso8601(self.t_min)
-        endpoint = f"/launches/upcoming/?limit={n:d}&mode=list&ordering=net&net__gt={t_min}"
+        endpoint = f"/launches/upcoming/?limit={n:d}&mode=list&include_suborbital=false&ordering=net&net__gt={t_min}"
         response = self.request(endpoint)
         if response is None: return
         self.update_launch_data(response, detailed=False)
