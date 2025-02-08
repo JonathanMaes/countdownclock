@@ -97,6 +97,7 @@ class LL2Sync:
         if time.time() - self.lastrequesttime > self.request_dt: # Sufficient time has passed since last request
             if len(self.queue) == 0: # No special requests
                 self.get_upcoming()
+                self.queue_details(self.launches[0]["ID"])
             else:
                 self.queue[0]()
                 self.queue.pop(0)
