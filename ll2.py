@@ -97,7 +97,7 @@ class LL2Sync:
         if time.time() - self.lastrequesttime > self.request_dt: # Sufficient time has passed since last request
             if len(self.queue) == 0: # No special requests
                 self.get_upcoming()
-                self.queue_details(self.launches[0]["ID"])
+                self.queue_details(self.launches[0]["id"])
             else:
                 self.queue[0]()
                 self.queue.pop(0)
@@ -114,10 +114,11 @@ class LL2Sync:
         self.lastrequesttime = time.time()
         try:
             response = medea.LazyRequest(url, timeout=10.)
+            print(response.status_code, url)
             if response.status_code == 429: # Too many requests
-                    response_throttle = requests.get("https://ll.thespacedevs.com/2.3.0/api-throttle/") # Just use requests lib, this is a small JSON
-                    self.lastrequesttime = time.time() + response_throttle.json()["next_use_secs"]
-                    return
+                response_throttle = requests.get("https://ll.thespacedevs.com/2.3.0/api-throttle/") # Just use requests lib, this is a small JSON
+                self.lastrequesttime = time.time() + response_throttle.json()["next_use_secs"]
+                return
             elif response.status_code == 200: return response
             else: return
         except OSError as e:
@@ -127,6 +128,8 @@ class LL2Sync:
             else:
                 log_exc(e)
                 raise e
+        except StopIteration as e:
+            log_exc(e)
     
     def update_launch_data(self, lazyreq: medea.LazyRequest, detailed: bool = False): # Puts relevant information from an LL2 launch response into self.launches.
         """ When <detailed> is True, the ["detailed"] field of affected launches is set to True, preventing further detailed requests. """
