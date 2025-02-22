@@ -113,6 +113,9 @@ class LL2Sync:
         if self.lastrequesttime > time.time(): return # Happens if 429 status happened recently
         self.lastrequesttime = time.time()
         try:
+            print(gc.mem_alloc(), gc.mem_free())
+            gc.collect()
+            print(gc.mem_alloc(), gc.mem_free())
             print(url)
             response = medea.LazyRequest(url, timeout=10.)
             print("Response status code:", response.status_code)
