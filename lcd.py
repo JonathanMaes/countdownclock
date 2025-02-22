@@ -1,10 +1,7 @@
 # Adapted from pico-LCD-1.8.py provided by WaveShare in https://www.waveshare.com/wiki/Pico-LCD-1.8#Examples
 import framebuf
+import gc
 from machine import Pin, SPI, PWM
-
-from bmp_file_reader import BMPFileReader
-from JPEGdecoder import jpeg
-from PNGdecoder import png
 
 
 class LCD_1inch8(framebuf.FrameBuffer):
@@ -149,16 +146,25 @@ class LCD_1inch8(framebuf.FrameBuffer):
             self.pixel(x, y, self.color(r, g, b))
     
     def show_image_BMP(self, x, y, file_handle): # Takes a file object, not a path!
+        from bmp_file_reader import BMPFileReader # Only import when necessary
         reader = BMPFileReader(file_handle)
         for row_i in range(0, reader.get_height()):
             for col_i, color in enumerate(reader.get_row(row_i)):
                 self.set_pixel(x + col_i, y + row_i, (color.red << 16 | color.green << 8 | color.blue))
+        del BMPFileReader
+        gc.collect()
     
     def show_image_PNG(self, x, y, file_handle): # Takes a file object or path.
+        from PNGdecoder import png # Only import when necessary
         png(file_handle, callback=self.set_pixel, fastalpha=False).render(x, y)
+        del png
+        gc.collect()
     
     def show_image_JPG(self, x, y, file_handle): # Takes a file object or path.
+        from JPEGdecoder import jpeg # Only import when necessary
         jpeg(file_handle, callback=self.set_pixel).render(x, y)
+        del jpeg
+        gc.collect()
         
 
 if __name__ == "__main__":
