@@ -1,5 +1,7 @@
-import requests
+import gc
+import krequests
 import time
+
 from machine import Timer
 
 from lcd import LCD_1inch8
@@ -45,6 +47,8 @@ class CountdownClock:
         self.segmentdisplay.brightness = self.brightness*16 - 1
 
     def show(self): # Runs every second
+        gc.collect()
+        print(gc.mem_alloc(), gc.mem_free())
         # 7-segment display
         specials = {0: "LOADING..", -1: "API.ISSUE"} # Special values of NETepoch to display
         if self.LL2.NETepoch in specials.keys():
@@ -75,8 +79,8 @@ class CountdownClock:
             flag_shown = country is not None
             if flag_shown:
                 try:
-                    flag = requests.get(f"https://raw.githubusercontent.com/yammadev/flag-icons/bd4bcf4f4829002cd10416029e05ba89a7554af4/png/{country.upper()}.png").content
-                    self.LCDdisplay.show_image_PNG(0, 0, flag)
+                    response = krequests.get(f"https://raw.githubusercontent.com/yammadev/flag-icons/bd4bcf4f4829002cd10416029e05ba89a7554af4/png/{country.upper()}.png", recvsize=2048)[1]
+                    self.LCDdisplay.show_image_PNG(0, 0, response)
                 except Exception as e:
                     log_exc(e)
                     flag_shown = False
