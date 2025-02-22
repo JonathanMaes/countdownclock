@@ -1,6 +1,12 @@
 # Minified from https://raw.githubusercontent.com/ExcaliburZero/bmp_file_reader/master/bmp_file_reader.py
 # MIT License, Copyright (c) 2021 Christopher Wells
 # Prepare a .bmp with command: magick convert <input> -type truecolor <out.bmp>
+# Usage:
+# reader = BMPFileReader(file_handle)
+# for row_i in range(0, reader.get_height()):
+#     for col_i, color in enumerate(reader.get_row(row_i)):
+#         if row_i == 50 and col_i == 20: print(color.red, color.green, color.blue)
+#         self.set_pixel(x + col_i, y + row_i, (color.red << 16 | color.green << 8 | color.blue))
 _C=False
 _B='little'
 _A=None

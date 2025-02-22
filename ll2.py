@@ -113,8 +113,9 @@ class LL2Sync:
         if self.lastrequesttime > time.time(): return # Happens if 429 status happened recently
         self.lastrequesttime = time.time()
         try:
+            print(url)
             response = medea.LazyRequest(url, timeout=10.)
-            print(response.status_code, url)
+            print("Response status code:", response.status_code)
             if response.status_code == 429: # Too many requests
                 response_throttle = requests.get("https://ll.thespacedevs.com/2.3.0/api-throttle/") # Just use requests lib, this is a small JSON
                 self.lastrequesttime = time.time() + response_throttle.json()["next_use_secs"]
