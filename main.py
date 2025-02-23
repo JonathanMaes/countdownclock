@@ -79,6 +79,7 @@ class CountdownClock:
             flag_shown = country is not None
             if flag_shown:
                 try:
+                    gc.collect()
                     response = krequests.get(f"https://raw.githubusercontent.com/yammadev/flag-icons/bd4bcf4f4829002cd10416029e05ba89a7554af4/png/{country.upper()}.png", recvsize=2048)[1]
                     self.LCDdisplay.show_image_PNG(0, 0, response)
                 except Exception as e:
