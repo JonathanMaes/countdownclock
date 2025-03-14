@@ -190,15 +190,15 @@ class LL2Sync:
                 ]
                 for i, p in enumerate(priorities):
                     if check_field(*p):
-                        if l.get("country_importance", 100) > i:
+                        if l.get("country_priority", 100) >= i:
                             l["country"] = val
-                            l["country_importance"] = i
+                            l["country_priority"] = i
                             break
 
         # Update <self.launches> with <new>
         for launch in new:
             if (ID := launch.get("id")) is None: continue
-            launch.pop("country_importance", None)
+            launch.pop("country_priority", None)
             
             # Have we requested this ID yet?
             ls = [l for l in self.launches if l["id"] == ID]
