@@ -231,7 +231,7 @@ class LL2Sync:
         self.update_launch_data(response, detailed=False)
     
     def get_details(self, ID): # Fetches launch <ID> in detailed mode
-        endpoint = f"/launches/upcoming/?id={ID}&mode=normal" # TODO: can now change "normal" to "detailed" because memory constraints should be gone
+        endpoint = f"/launches/upcoming/?id={ID}&mode=detailed"
         response = self.request(endpoint)
         if response is None: return
         self.update_launch_data(response, detailed=True)
