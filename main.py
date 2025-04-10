@@ -85,6 +85,7 @@ class CountdownClock:
                 except Exception as e:
                     log_exc(e)
                     flag_shown = False
+                    connect()
             # Rocket name
             row = 4
             name = wrap_text(l.get("rocket_name", ""), 20 - 3*flag_shown).split("\n")

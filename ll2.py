@@ -134,6 +134,7 @@ class LL2Sync:
                 raise e
         except StopIteration as e:
             log_exc(e)
+            connect()
     
     def update_launch_data(self, lazyreq: medea.LazyRequest, detailed: bool = False): # Puts relevant information from an LL2 launch response into self.launches.
         """ When <detailed> is True, the ["detailed"] field of affected launches is set to True, preventing further detailed requests. """
