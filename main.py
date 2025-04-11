@@ -142,9 +142,9 @@ class CountdownClock:
                 self.show_CET = dst = False
             TZ = ("CEST" if dst else "CET") if self.show_CET else "UTC"
             T = l["net_epoch"] + self.show_CET*(7200 if dst else 3600)
-            weekday = (int(T / 86400) + 4) % 7
-            hour = int( T / 3600 ) % 24
-            minute = int( T / 60 ) % 60
+            weekday = (int(T // 86400) + 4) % 7
+            hour = int( T // 3600 ) % 24
+            minute = int( T // 60 ) % 60
             second = T % 60
             weekdays = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"]
             time_height = 10
